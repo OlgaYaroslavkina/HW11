@@ -3,6 +3,10 @@ from collections.abc import Iterator
 from datetime import datetime
 
 
+class BirthdayError(Exception):
+    ...
+
+
 class Field:
     def __init__(self, value) -> None:
         self.value = value
@@ -37,11 +41,21 @@ class Phone(Field):
 
 
 class Birthday(Field):
-    def validate(self, value):
+    def __init___(self, value):
+        self.__value = None
+        self.value = value
+
+    @property
+    def value(self):
+        return self.__value
+
+    @value.setter
+    def value(self, value):
         try:
-            datetime.strptime(value, "%Y-%m-%d")
+            self.__value = datetime.strptime(value, "%Y-%m-%d").date()
         except ValueError:
-            raise ValueError("Invalid date format. Expected format: YYYY-MM-DD")
+            # raise ValueError("Invalid date format. Expected format: YYYY-MM-DD")
+            raise BirthdayError()
 
 
 class Record:
@@ -58,24 +72,15 @@ class Record:
         if not self.birthday:
             return None
         today = datetime.now()
-        next_birthday = datetime(today.year, self.birthday.month, self.birthday.day)
+        next_birthday = datetime(
+            today.year, self.birthday.value.month, self.birthday.value.day
+        )
         if next_birthday < today:  # якщо день народження вже був у поточному році
             next_birthday = datetime(
                 today.year + 1, self.birthday.month, self.birthday.day
             )
         days_left = (next_birthday - today).days
         return days_left
-
-    @property
-    def birthday(self):
-        return self._birthday
-
-    @birthday.setter
-    def birthday(self, value):
-        if value is not None:
-            self._birthday = Birthday(value)
-        else:
-            self._birthday = None
 
     def add_phone(self, phone: Phone):
         if phone.value not in [p.value for p in self.phones]:
@@ -104,6 +109,11 @@ class Record:
 
     def __repr__(self) -> str:
         return str(self)
+
+
+# emp = Record("Jill", birthday=Birthday("1995-07-30"))
+# print(emp.birthday.value)
+# print(emp.days_to_birthday())
 
 
 class AddressBook(UserDict):
